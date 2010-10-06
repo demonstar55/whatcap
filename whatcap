@@ -1,0 +1,95 @@
+#!/usr/bin/env python
+
+##############################################################
+# whatcap - Fixes capitlization of tags of FLAC files 
+#            according to what.cd guide lines.
+# Created by demonstar55.
+# GPL v3: http://www.gnu.org/licenses/gpl.txt
+##############################################################
+
+import os
+import re
+import fnmatch
+from optparse import OptionParser
+
+VERSION = "1.0"
+
+def repl_func(m):
+    """process regular expression match groups for word upper-casing problem"""
+    return m.group(1) + m.group(2).upper()
+
+def escape(pattern):
+    pattern = re.sub('`', '\`', pattern)
+    return pattern
+
+def esc(pattern):
+    pattern = re.sub('"', '\\"', pattern)
+    return pattern
+
+def buildTags(file):
+    tags = {}
+    for tag in ('TITLE', 'ALBUM', 'ARTIST', 'TRACKNUMBER', 'DATE'):
+        tagcommand = 'metaflac --show-tag=' + esc(tag) + ' "' + esc(file) + '"'
+        temp = re.sub('\S.*=', '', os.popen(escape(tagcommand)).read().rstrip())
+        tags.update({tag:temp})
+
+    if len(tags['TRACKNUMBER']) == 1:
+        tags['TRACKNUMBER'] = '0' + tags['TRACKNUMBER']
+
+    return tags
+
+def processTags(tags):
+    lower = ['a', 'an', 'the', 'and', 'or', 'nor', 'but', 'for', 'yet', 'so', 'as', 'at',\
+            'by', 'for', 'in', 'of', 'on', 'to', 'from', 'vs.', 'v.']
+    for tag in ('TITLE', 'ALBUM', 'ARTIST'):
+        tags[tag] = re.sub("(^|\s)(\S)", repl_func, tags[tag])
+        list = tags[tag].split()
+        for word in lower:
+            pattern = re.compile("^" + word + "$", re.I)
+            for each in list:
+                if pattern.match(each):
+                    if not tags[tag].endswith(each) and not tags[tag].startswith(each):
+                        tags[tag] = re.sub(each, word, tags[tag])
+
+    return tags
+
+
+def main():
+    usage_text = "%prog [options] /path/to/FLAC"
+    info_text = "Depends on metaflac."
+    parser = OptionParser(usage=usage_text, version="%prog " + VERSION, epilog=info_text)
+    parser.add_option('-v', '--verbose', action='store_true', dest='verbose', default=False,\
+        help='increase verbosity (Default: False)')
+    (options, flacdirs) = parser.parse_args()
+
+    if len(flacdirs) < 1:
+        parser.error("Incorrect number of arguments")
+    
+    for flacdir in flacdirs:
+        flacdir = os.path.abspath(flacdir)
+        flacfiles = []
+
+        for dirpath, dirs, files in os.walk(flacdir, topdown=False):
+            for name in files:
+                if fnmatch.fnmatch(name, '*.flac'):
+                    flacfiles.append(os.path.join(dirpath, name))
+
+            for file in flacfiles:
+                print('Now processing ' + file)
+                tags = buildTags(file)
+                tags = processTags(tags)
+                tag_command = 'metaflac --remove-tag=TITLE --remove-tag=ALBUM --remove-tag=ARTIST --remove-tag=TRACKNUMBER "'\
+                    + esc(file) + '"'
+                if options.verbose:
+                    print(tag_command)
+                os.system(escape(tag_command))
+                tag_command = 'metaflac --set-tag=TITLE="%s" --set-tag=ALBUM="%s" --set-tag=ARTIST="%s" --set-tag=TRACKNUMBER="%s" "%s"' % (esc(tags['TITLE']), esc(tags['ALBUM']), esc(tags['ARTIST']), esc(tags['TRACKNUMBER']), esc(file))
+                if options.verbose:
+                    print(tag_command)
+                os.system(escape(tag_command))
+
+    return 0
+
+if __name__ == '__main__':
+        main()
+
