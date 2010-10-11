@@ -12,7 +12,7 @@ import re
 import fnmatch
 from optparse import OptionParser
 
-VERSION = "1.0"
+VERSION = "1.1"
 
 def repl_func(m):
     """process regular expression match groups for word upper-casing problem"""
@@ -49,7 +49,7 @@ def processTags(tags):
             for each in list:
                 if pattern.match(each):
                     if not tags[tag].endswith(each) and not tags[tag].startswith(each):
-                        tags[tag] = re.sub(each, word, tags[tag])
+                        tags[tag] = re.sub(r'\b' + each + r'\b', word, tags[tag])
 
     return tags
 
