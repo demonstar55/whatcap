@@ -12,7 +12,7 @@ import re
 import fnmatch
 from optparse import OptionParser
 
-VERSION = "1.1"
+VERSION = "1.2"
 
 def repl_func(m):
     """process regular expression match groups for word upper-casing problem"""
@@ -60,7 +60,12 @@ def main():
     parser = OptionParser(usage=usage_text, version="%prog " + VERSION, epilog=info_text)
     parser.add_option('-v', '--verbose', action='store_true', dest='verbose', default=False,\
         help='increase verbosity (Default: False)')
+    parser.add_option('-n', '--no-act', action='store_true', dest='noact', default=False,\
+        help='No Action: show what would have been changed, turns on verbose (Default: False)')
     (options, flacdirs) = parser.parse_args()
+
+    if options.noact:
+        options.verbose=True
 
     if len(flacdirs) < 1:
         parser.error("Incorrect number of arguments")
@@ -82,11 +87,13 @@ def main():
                     + esc(file) + '"'
                 if options.verbose:
                     print(tag_command)
-                os.system(escape(tag_command))
+                if not options.noact:
+                    os.system(escape(tag_command))
                 tag_command = 'metaflac --set-tag=TITLE="%s" --set-tag=ALBUM="%s" --set-tag=ARTIST="%s" --set-tag=TRACKNUMBER="%s" "%s"' % (esc(tags['TITLE']), esc(tags['ALBUM']), esc(tags['ARTIST']), esc(tags['TRACKNUMBER']), esc(file))
                 if options.verbose:
                     print(tag_command)
-                os.system(escape(tag_command))
+                if not options.noact:
+                    os.system(escape(tag_command))
 
     return 0
 
