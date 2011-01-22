@@ -60,16 +60,16 @@ def main():
                 if fnmatch.fnmatch(name, '*.flac'):
                     flacfiles.append(os.path.join(dirpath, name))
 
-            for file in flacfiles:
-                print('Now processing ' + file)
-                audio = FLAC(file)
-                tags = processTags(audio)
-                if options.verbose:
-                    print('The new metadata:')
-                    for each in ('Artist', 'Album', 'Tracknumber', 'Title'):
-                        print(each + ': '  + audio[each][0])
-                if not options.noact:
-                    audio.save()
+        for file in flacfiles:
+            print('Now processing ' + file)
+            audio = FLAC(file)
+            tags = processTags(audio)
+            if options.verbose:
+                print('The new metadata:')
+                for each in ('Artist', 'Album', 'Tracknumber', 'Title'):
+                    print(each + ': '  + audio[each][0])
+            if not options.noact:
+                audio.save()
 
     return 0
 
