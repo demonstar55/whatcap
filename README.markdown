@@ -13,5 +13,5 @@ Options:
   -h, --help     show this help message and exit
   -v, --verbose  increase verbosity (Default: False)
 
-Depends on metaflac.
+Depends on mutagen (python-mutagen).
 
