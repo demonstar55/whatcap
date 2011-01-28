@@ -12,8 +12,11 @@ import re
 import fnmatch
 from optparse import OptionParser
 from mutagen.flac import FLAC
+from mutagen.oggvorbis import OggVorbis
+from mutagen.easyid3 import EasyID3
+from mutagen.easymp4 import EasyMP4
 
-VERSION = "1.3"
+VERSION = "1.4"
 
 def repl_func(m):
     """process regular expression match groups for word upper-casing problem"""
@@ -22,7 +25,8 @@ def repl_func(m):
 def processTags(tags):
     lower = ['a', 'an', 'the', 'and', 'or', 'nor', 'but', 'for', 'yet', 'so', 'as', 'at',\
             'by', 'for', 'in', 'of', 'on', 'to', 'from', 'vs.', 'v.']
-    for tag in ('TITLE', 'ALBUM', 'ARTIST'):
+    taglist = ('TITLE', 'ALBUM', 'ARTIST')
+    for tag in taglist:
         tags[tag] = re.sub("(^|\s)(\S)", repl_func, tags[tag][0])
         list = tags[tag][0].split()
         for word in lower:
@@ -32,42 +36,54 @@ def processTags(tags):
                     if not tags[tag][0].endswith(each) and not tags[tag][0].startswith(each):
                         tags[tag] = re.sub(r'\b' + each + r'\b', word, tags[tag][0])
 
-    return tags
+    return taglist
 
 
 def main():
-    usage_text = "%prog [options] /path/to/FLAC"
-    info_text = "Depends on metaflac."
+    usage_text = "%prog [options] /path/to/album"
+    info_text = "Depends on mutagen."
     parser = OptionParser(usage=usage_text, version="%prog " + VERSION, epilog=info_text)
     parser.add_option('-v', '--verbose', action='store_true', dest='verbose', default=False,\
         help='increase verbosity (Default: False)')
     parser.add_option('-n', '--no-act', action='store_true', dest='noact', default=False,\
         help='No Action: show what would have been changed, turns on verbose (Default: False)')
-    (options, flacdirs) = parser.parse_args()
+    (options, musicdirs) = parser.parse_args()
 
     if options.noact:
         options.verbose=True
 
-    if len(flacdirs) < 1:
+    if len(musicdirs) < 1:
         parser.error("Incorrect number of arguments")
-    
-    for flacdir in flacdirs:
-        flacdir = os.path.abspath(flacdir)
-        flacfiles = []
+  
+    for musicdir in musicdirs:
+        musicdir = os.path.abspath(musicdir)
+        musicfiles = []
 
-        for dirpath, dirs, files in os.walk(flacdir, topdown=False):
+        for dirpath, dirs, files in os.walk(musicdir, topdown=False):
             for name in files:
-                if fnmatch.fnmatch(name, '*.flac'):
-                    flacfiles.append(os.path.join(dirpath, name))
+                if fnmatch.fnmatch(name, '*.flac') or fnmatch.fnmatch(name, '*.mp3') or \
+                    fnmatch.fnmatch(name, '*.ogg') or fnmatch.fnmatch(name, '*m4a'):
+                    musicfiles.append(os.path.join(dirpath, name))
 
-        for file in flacfiles:
+        for file in musicfiles:
             print('Now processing ' + file)
-            audio = FLAC(file)
-            tags = processTags(audio)
+
+            if fnmatch.fnmatch(file, '*.flac'):
+                audio = FLAC(file)
+            elif fnmatch.fnmatch(file, '*.mp3'):
+                audio = EasyID3(file)
+            elif fnmatch.fnmatch(file, '*.ogg'):
+                audio = OggVorbis(file)
+            elif fnmatch.fnmatch(file, '*.m4a'):
+                audio = EasyMP4(file)
+            else:
+                print("No music file was passed.")
+
+            taglist = processTags(audio)
             if options.verbose:
                 print('The new metadata:')
-                for each in ('Artist', 'Album', 'Tracknumber', 'Title'):
-                    print(each + ': '  + audio[each][0])
+                for each in taglist:
+                    print(each + ': ' + audio[each][0])
             if not options.noact:
                 audio.save()
 
