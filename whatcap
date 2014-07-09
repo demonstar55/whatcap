@@ -35,13 +35,14 @@ def processtags(tags):
 # Capitalize each word first
         tags[tag] = ' '.join(word[0].upper() + word[1:] for word in
                              tags[tag][0].split())
-        newtags = ''
+        newtags = []
         for word in tags[tag][0].split():
             if word.lower() in LOWER:
                 word = word[0].lower() + word[1:]
-            newtags = newtags +  (' ' if newtags else '') + word
+            newtags.append(word)
 # we could do more logic above, but fuck it
-        tags[tag] = newtags[0].upper() + newtags[1:]
+        newtags[0] = newtags[0][0].upper() + newtags[0][1:]
+        tags[tag] = ' '.join(newtags)
     return
 
 
