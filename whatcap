@@ -32,13 +32,10 @@ def processtags(tags):
     """Corrects capitalizations"""
 
     for tag in ('TITLE', 'ALBUM', 'ARTIST'):
-# Capitalize each word first
-        tags[tag] = ' '.join(word[0].upper() + word[1:] for word in
-                             tags[tag][0].split())
-# list comp + lambda to lower case the ones in the LOWER set
-        newtags = [(lambda x: x[0].lower() + x[1:] if x.lower() in LOWER else x)(x)
-                   for x in tags[tag][0].split()]
-# we could do more logic above, but fuck it
+# lambda function lower cases if in set, upper cases if not
+        newtags = [(lambda x: x[0].lower() + x[1:] if x.lower() in LOWER else \
+                   x[0].upper() + x[1:])(word) for word in tags[tag][0].split()]
+# we could do more logic above, but fuck it, force first to be upper
         newtags[0] = newtags[0][0].upper() + newtags[0][1:]
         tags[tag] = ' '.join(newtags)
     return

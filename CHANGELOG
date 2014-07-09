@@ -3,6 +3,7 @@
 * Revised processtags function to not use re
 * More inline with PEP8, at least for python2
 * Sets should be faster
+* A few more pythonic changes (a little bit faster too!)
 
 2011-01-27 demonstar55 <demonstar55@gmail.com>
 
