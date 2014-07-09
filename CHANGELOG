@@ -1,3 +1,8 @@
+2014-07-09 demonstar55 <demonstar55@gmail.com>
+
+* Revised processtags function to not use re
+* More inline with PEP8, at least for python2
+
 2011-01-27 demonstar55 <demonstar55@gmail.com>
 
 * Added support for mp3, OggVorbis, and AAC

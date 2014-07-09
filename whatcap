@@ -1,14 +1,21 @@
-#!/usr/bin/env python
+#! /usr/bin/env python
+# -*- coding: utf-8 -*-
+# vim:fenc=utf-8
 
 ##############################################################
-# whatcap - Fixes capitlization of tags of FLAC files 
+# whatcap - Fixes capitalization of tags of FLAC files
 #            according to what.cd guide lines.
 # Created by demonstar55.
 # GPL v3: http://www.gnu.org/licenses/gpl.txt
 ##############################################################
 
+"""
+    Fixes capitalization of tags in various music formats
+    Follows what.cd guide lines (mostly)
+    Requires mutagen
+"""
+
 import os
-import re
 import fnmatch
 from optparse import OptionParser
 from mutagen.flac import FLAC
@@ -16,79 +23,82 @@ from mutagen.oggvorbis import OggVorbis
 from mutagen.easyid3 import EasyID3
 from mutagen.easymp4 import EasyMP4
 
-VERSION = "1.4"
+VERSION = "1.5"
 
-def repl_func(m):
-    """process regular expression match groups for word upper-casing problem"""
-    return m.group(1) + m.group(2).upper()
+def processtags(tags):
+    """Corrects capitalizations"""
+    lower = ['a', 'an', 'the', 'and', 'or', 'nor', 'but', 'for', 'yet', 'so',\
+           'as', 'at', 'by', 'for', 'in', 'of', 'on', 'to', 'from', 'vs.', 'v.']
 
-def processTags(tags):
-    lower = ['a', 'an', 'the', 'and', 'or', 'nor', 'but', 'for', 'yet', 'so', 'as', 'at',\
-            'by', 'for', 'in', 'of', 'on', 'to', 'from', 'vs.', 'v.']
-    taglist = ('TITLE', 'ALBUM', 'ARTIST')
-    for tag in taglist:
-        tags[tag] = re.sub("(^|\s)(\S)", repl_func, tags[tag][0])
-        list = tags[tag][0].split()
-        for word in lower:
-            pattern = re.compile("^" + word + "$", re.I)
-            for each in list:
-                if pattern.match(each):
-                    if not tags[tag][0].endswith(each) and not tags[tag][0].startswith(each):
-                        tags[tag] = re.sub(r'\b' + each + r'\b', word, tags[tag][0])
-
-    return taglist
+    for tag in ('TITLE', 'ALBUM', 'ARTIST'):
+# Capitalize each word first
+        tags[tag] = ' '.join(word[0].upper() + word[1:] for word in
+                             tags[tag][0].split())
+        newtags = ''
+        for word in tags[tag][0].split():
+            if word.lower() in lower:
+                word = word[0].lower() + word[1:]
+            newtags = newtags +  (' ' if newtags else '') + word
+# we could do more logic above, but fuck it
+        tags[tag] = newtags[0].upper() + newtags[1:]
+    return
 
 
 def main():
     usage_text = "%prog [options] /path/to/album"
     info_text = "Depends on mutagen."
-    parser = OptionParser(usage=usage_text, version="%prog " + VERSION, epilog=info_text)
-    parser.add_option('-v', '--verbose', action='store_true', dest='verbose', default=False,\
-        help='increase verbosity (Default: False)')
-    parser.add_option('-n', '--no-act', action='store_true', dest='noact', default=False,\
-        help='No Action: show what would have been changed, turns on verbose (Default: False)')
+    parser = OptionParser(usage=usage_text, version="%prog " + VERSION,
+                          epilog=info_text)
+    parser.add_option('-v', '--verbose', action='store_true', dest='verbose',
+                      default=False, help='increase verbosity (Default: False)')
+    parser.add_option('-n', '--no-act', action='store_true', dest='noact',
+                      default=False,
+                      help='No Action: show what would have been changed, turns on verbose (Default: False)')
     (options, musicdirs) = parser.parse_args()
 
     if options.noact:
-        options.verbose=True
+        options.verbose = True
 
     if len(musicdirs) < 1:
         parser.error("Incorrect number of arguments")
-  
+
     for musicdir in musicdirs:
         musicdir = os.path.abspath(musicdir)
         musicfiles = []
 
-        for dirpath, dirs, files in os.walk(musicdir, topdown=False):
+        for dirpath, dirnames, files in os.walk(musicdir, topdown=False):
             for name in files:
-                if fnmatch.fnmatch(name, '*.flac') or fnmatch.fnmatch(name, '*.mp3') or \
-                    fnmatch.fnmatch(name, '*.ogg') or fnmatch.fnmatch(name, '*m4a'):
+                if fnmatch.fnmatch(name, '*.flac') or \
+                        fnmatch.fnmatch(name, '*.mp3') or \
+                        fnmatch.fnmatch(name, '*.ogg') or \
+                        fnmatch.fnmatch(name, '*.m4a'):
                     musicfiles.append(os.path.join(dirpath, name))
 
-        for file in musicfiles:
-            print('Now processing ' + file)
+        for musicfile in musicfiles:
+            print 'Now processing ' + musicfile
 
-            if fnmatch.fnmatch(file, '*.flac'):
-                audio = FLAC(file)
-            elif fnmatch.fnmatch(file, '*.mp3'):
-                audio = EasyID3(file)
-            elif fnmatch.fnmatch(file, '*.ogg'):
-                audio = OggVorbis(file)
-            elif fnmatch.fnmatch(file, '*.m4a'):
-                audio = EasyMP4(file)
+            if fnmatch.fnmatch(musicfile, '*.flac'):
+                audio = FLAC(musicfile)
+            elif fnmatch.fnmatch(musicfile, '*.mp3'):
+                audio = EasyID3(musicfile)
+            elif fnmatch.fnmatch(musicfile, '*.ogg'):
+                audio = OggVorbis(musicfile)
+            elif fnmatch.fnmatch(musicfile, '*.m4a'):
+                audio = EasyMP4(musicfile)
             else:
-                print("No music file was passed.")
+                print "No music file was passed."
 
-            taglist = processTags(audio)
+            processtags(audio)
             if options.verbose:
-                print('The new metadata:')
-                for each in taglist:
-                    print(each + ': ' + audio[each][0])
+                print 'The new metadata:'
+                for tag in ('TITLE', 'ALBUM', 'ARTIST'):
+                    print tag + ': ' + audio[tag][0]
             if not options.noact:
                 audio.save()
 
     return 0
 
 if __name__ == '__main__':
-        main()
+    main()
 
+# vim: tabstop=4 expandtab shiftwidth=4 softtabstop=4
