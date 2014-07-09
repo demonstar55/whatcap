@@ -23,12 +23,13 @@ from mutagen.oggvorbis import OggVorbis
 from mutagen.easyid3 import EasyID3
 from mutagen.easymp4 import EasyMP4
 
-VERSION = "1.5"
+VERSION = "1.5.1"
+LOWER = set(['a', 'an', 'the', 'and', 'or', 'nor', 'but', 'for', 'yet', 'so',
+             'as', 'at', 'by', 'for', 'in', 'of', 'on', 'to', 'from', 'vs.',
+             'v.'])
 
 def processtags(tags):
     """Corrects capitalizations"""
-    lower = ['a', 'an', 'the', 'and', 'or', 'nor', 'but', 'for', 'yet', 'so',\
-           'as', 'at', 'by', 'for', 'in', 'of', 'on', 'to', 'from', 'vs.', 'v.']
 
     for tag in ('TITLE', 'ALBUM', 'ARTIST'):
 # Capitalize each word first
@@ -36,7 +37,7 @@ def processtags(tags):
                              tags[tag][0].split())
         newtags = ''
         for word in tags[tag][0].split():
-            if word.lower() in lower:
+            if word.lower() in LOWER:
                 word = word[0].lower() + word[1:]
             newtags = newtags +  (' ' if newtags else '') + word
 # we could do more logic above, but fuck it
