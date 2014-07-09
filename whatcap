@@ -23,7 +23,7 @@ from mutagen.oggvorbis import OggVorbis
 from mutagen.easyid3 import EasyID3
 from mutagen.easymp4 import EasyMP4
 
-VERSION = "1.5.1"
+VERSION = "1.5.2"
 LOWER = set(['a', 'an', 'the', 'and', 'or', 'nor', 'but', 'for', 'yet', 'so',
              'as', 'at', 'by', 'for', 'in', 'of', 'on', 'to', 'from', 'vs.',
              'v.'])
