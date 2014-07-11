@@ -3,8 +3,8 @@
 # vim:fenc=utf-8
 
 ##############################################################
-# whatcap - Fixes capitalization of tags of FLAC files
-#            according to what.cd guide lines.
+# whatcap - Fixes capitalization of tags of various music
+#           formats according to what.cd guide lines.
 # Created by demonstar55.
 # GPL v3: http://www.gnu.org/licenses/gpl.txt
 ##############################################################
@@ -16,21 +16,27 @@
 """
 
 import os
+import sys
 from fnmatch import fnmatch
 from optparse import OptionParser
-from mutagen.flac import FLAC
-from mutagen.oggvorbis import OggVorbis
-from mutagen.easyid3 import EasyID3
-from mutagen.easymp4 import EasyMP4
+try:
+    from mutagen.flac import FLAC
+    from mutagen.oggvorbis import OggVorbis
+    from mutagen.easyid3 import EasyID3
+    from mutagen.easymp4 import EasyMP4
+except ImportError as err:
+    print err
+    print "Please install mutagen"
+    sys.exit()
 
-VERSION = "1.5.2"
+VERSION = "1.6.0"
+# SET FOR SPEED
 LOWER = set(['a', 'an', 'the', 'and', 'or', 'nor', 'but', 'for', 'yet', 'so',
              'as', 'at', 'by', 'for', 'in', 'of', 'on', 'to', 'from', 'vs.',
              'v.'])
 
 def processtags(tags):
     """Corrects capitalizations"""
-
     for tag in ('TITLE', 'ALBUM', 'ARTIST'):
 # lambda function lower cases if in set, upper cases if not
         newtags = [(lambda x: x[0].lower() + x[1:] if x.lower() in LOWER else \
@@ -40,6 +46,20 @@ def processtags(tags):
         tags[tag] = ' '.join(newtags)
     return
 
+def loadfile(musicfile):
+    """loads a file
+       this is a bit quicker than using the metagen.File since
+       it only looks for a few types and just looks at extension
+    """
+    if fnmatch(musicfile, '*.flac'):
+        return FLAC(musicfile)
+    elif fnmatch(musicfile, '*.mp3'):
+        return EasyID3(musicfile)
+    elif fnmatch(musicfile, '*.ogg'):
+        return OggVorbis(musicfile)
+    elif fnmatch(musicfile, '*.m4a'):
+        return EasyMP4(musicfile)
+    return None
 
 def main():
     usage_text = "%prog [options] /path/to/album"
@@ -51,7 +71,7 @@ def main():
     parser.add_option('-n', '--no-act', action='store_true', dest='noact',
                       default=False,
                       help='No Action: show what would have been changed, '
-                      ' turns on verbose (Default: False)')
+                      'turns on verbose (Default: False)')
     (options, musicdirs) = parser.parse_args()
 
     if options.noact:
@@ -68,21 +88,13 @@ def main():
                       if fnmatch(name, '*.flac') or fnmatch(name, '*.mp3') or
                       fnmatch(name, '*.ogg') or fnmatch(name, '*.m4a')]
 
+# This for loop could be eliminated (and the list comp above) but
+# I didn't see any performance difference, and this is more readable
         for musicfile in musicfiles:
             print 'Now processing ' + musicfile
-
-# I could use mutagen.File here, but that is much slower ...
-            if fnmatch(musicfile, '*.flac'):
-                audio = FLAC(musicfile)
-            elif fnmatch(musicfile, '*.mp3'):
-                audio = EasyID3(musicfile)
-            elif fnmatch(musicfile, '*.ogg'):
-                audio = OggVorbis(musicfile)
-            elif fnmatch(musicfile, '*.m4a'):
-                audio = EasyMP4(musicfile)
-            else:
-                print "No music file was passed."
-
+            audio = loadfile(musicfile)
+            if audio is None:
+                continue
             processtags(audio)
             if options.verbose:
                 print 'The new metadata:'
@@ -90,7 +102,6 @@ def main():
                     print '\t' + tag + ':\t' + audio[tag][0]
             if not options.noact:
                 audio.save()
-
     return 0
 
 if __name__ == '__main__':

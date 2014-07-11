@@ -1,3 +1,7 @@
+2014-07-10 demonstar55 <demonstar55@gmail.com>
+
+* Bunch of refactoring, more pythonic, more speeds
+
 2014-07-09 demonstar55 <demonstar55@gmail.com>
 
 * Revised processtags function to not use re
