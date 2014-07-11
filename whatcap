@@ -16,7 +16,7 @@
 """
 
 import os
-import fnmatch
+from fnmatch import fnmatch
 from optparse import OptionParser
 from mutagen.flac import FLAC
 from mutagen.oggvorbis import OggVorbis
@@ -50,7 +50,8 @@ def main():
                       default=False, help='increase verbosity (Default: False)')
     parser.add_option('-n', '--no-act', action='store_true', dest='noact',
                       default=False,
-                      help='No Action: show what would have been changed, turns on verbose (Default: False)')
+                      help='No Action: show what would have been changed, '
+                      ' turns on verbose (Default: False)')
     (options, musicdirs) = parser.parse_args()
 
     if options.noact:
@@ -61,26 +62,23 @@ def main():
 
     for musicdir in musicdirs:
         musicdir = os.path.abspath(musicdir)
-        musicfiles = []
-
-        for dirpath, dirnames, files in os.walk(musicdir, topdown=False):
-            for name in files:
-                if fnmatch.fnmatch(name, '*.flac') or \
-                        fnmatch.fnmatch(name, '*.mp3') or \
-                        fnmatch.fnmatch(name, '*.ogg') or \
-                        fnmatch.fnmatch(name, '*.m4a'):
-                    musicfiles.append(os.path.join(dirpath, name))
+        musicfiles = [os.path.join(root, name)
+                      for root, _, files in os.walk(musicdir)
+                      for name in files
+                      if fnmatch(name, '*.flac') or fnmatch(name, '*.mp3') or
+                      fnmatch(name, '*.ogg') or fnmatch(name, '*.m4a')]
 
         for musicfile in musicfiles:
             print 'Now processing ' + musicfile
 
-            if fnmatch.fnmatch(musicfile, '*.flac'):
+# I could use mutagen.File here, but that is much slower ...
+            if fnmatch(musicfile, '*.flac'):
                 audio = FLAC(musicfile)
-            elif fnmatch.fnmatch(musicfile, '*.mp3'):
+            elif fnmatch(musicfile, '*.mp3'):
                 audio = EasyID3(musicfile)
-            elif fnmatch.fnmatch(musicfile, '*.ogg'):
+            elif fnmatch(musicfile, '*.ogg'):
                 audio = OggVorbis(musicfile)
-            elif fnmatch.fnmatch(musicfile, '*.m4a'):
+            elif fnmatch(musicfile, '*.m4a'):
                 audio = EasyMP4(musicfile)
             else:
                 print "No music file was passed."
@@ -89,7 +87,7 @@ def main():
             if options.verbose:
                 print 'The new metadata:'
                 for tag in ('TITLE', 'ALBUM', 'ARTIST'):
-                    print tag + ': ' + audio[tag][0]
+                    print '\t' + tag + ':\t' + audio[tag][0]
             if not options.noact:
                 audio.save()
 
