@@ -77,7 +77,7 @@ def main():
     if options.noact:
         options.verbose = True
 
-    if len(musicdirs) < 1:
+    if not musicdirs:
         parser.error("Incorrect number of arguments")
 
     for musicdir in musicdirs:
